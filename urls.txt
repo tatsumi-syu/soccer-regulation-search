@@ -1,0 +1,4 @@
+AQUA_2026.pdf,https://osaka-fa.or.jp/4shu/2025%e5%b9%b4%e5%ba%a6%e4%b8%8a%e6%9c%9f%e3%82%a8%e3%83%b3%e3%83%88%e3%83%aa%e3%83%bc-3/
+U12_2026.pdf,https://osaka-fa.or.jp/4shu/2025%e5%b9%b4%e5%ba%a6%e4%b8%8a%e6%9c%9f%e3%82%a8%e3%83%b3%e3%83%88%e3%83%aa%e3%83%bc-3/
+U11_2026.pdf,https://osaka-fa.or.jp/4shu/2025%e5%b9%b4%e5%ba%a6%e4%b8%8a%e6%9c%9f%e3%82%a8%e3%83%b3%e3%83%88%e3%83%aa%e3%83%bc-3/
+U10_2026.pdf,https://osaka-fa.or.jp/4shu/2025%e5%b9%b4%e5%ba%a6%e4%b8%8a%e6%9c%9f%e3%82%a8%e3%83%b3%e3%83%88%e3%83%aa%e3%83%bc-3/
