@@ -45,7 +45,7 @@ def search_keywords_in_pdf_by_page(file_path, keywords):
 
 # --- 画面の構築 ---
 st.title("⚽ 少年サッカー公式戦レギュレーション検索")
-st.write("登録されている大会のルール（PDF）からキーワードを爆速で検索します。")
+st.write("登録されている大会のルール（PDF）からキーワードを検索します。")
 
 if not os.path.exists(DOCS_DIR) or not [f for f in os.listdir(DOCS_DIR) if f.endswith('.pdf')]:
     st.warning("⚠️ documentsフォルダ内にPDFファイルが見つかりません。")
