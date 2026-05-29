@@ -1,0 +1,39 @@
+name: Monthly Regulation Auto Update
+
+# 毎月1日の日本時間 午前9時（世界標準時の午前0時）に自動実行
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # 手動で今すぐ動かしたい時用のボタン
+
+jobs:
+  update-pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: コードをチェックアウト
+        uses: actions/checkout@v3
+
+      - name: Pythonの環境をセットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 必要な部品（ライブラリ）をインストール
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: 自動更新スクリプトを実行
+        run: python -m auto_update
+
+      - name: 📝 実行ログファイルを作成・追記する
+        run: |
+          # 日本時間の現在日時を取得してログに書き込む
+          TZ="Asia/Tokyo" date "+%Y-%m-%d %H:%M:%S - 毎月の自動更新ロボットが正常に実行されました。" >> update_log.txt
+
+      - name: 新しいPDFやログファイルをGitHubに保存（コミット＆プッシュ）
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # PDFだけでなくログファイルも一緒に保存対象にする
+          git add documents/*.pdf update_log.txt
+          git diff --cached --quiet || (git commit -m "🤖 クラウドロボット：自動更新実行（ログ記録完了）" && git push)
