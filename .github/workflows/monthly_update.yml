@@ -6,6 +6,10 @@ on:
     - cron: '0 0 1 * *'
   workflow_dispatch: # 手動で今すぐ動かしたい時用のボタン
 
+# ロボットにファイルを書き換えて保存する強い権限を与える
+permissions:
+  contents: write
+
 jobs:
   update-pdf:
     runs-on: ubuntu-latest
@@ -18,16 +22,15 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 必要な部品（ライブラリ）をインストール
+      - name: 必要な部品（ライブラリ）をすべてインストール
         run: |
-          pip install requests beautifulsoup4
+          pip install requests beautifulsoup4 pypdf streamlit
 
       - name: 自動更新スクリプトを実行
         run: python -m auto_update
 
       - name: 📝 実行ログファイルを作成・追記する
         run: |
-          # 日本時間の現在日時を取得してログに書き込む
           TZ="Asia/Tokyo" date "+%Y-%m-%d %H:%M:%S - 毎月の自動更新ロボットが正常に実行されました。" >> update_log.txt
 
       - name: 新しいPDFやログファイルをGitHubに保存（コミット＆プッシュ）
