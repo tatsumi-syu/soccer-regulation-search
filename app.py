@@ -2,32 +2,24 @@ import streamlit as st
 import os
 import re
 from pypdf import PdfReader
-import base64
 import auto_update
 
 DOCS_DIR = "documents"
 GITHUB_USERNAME = "tatsumi-syu"
 REPOSITORY_NAME = "soccer-regulation-search"
 
-# --- スマホ・PC最適化CSS ---
+# --- パソコンでもスマホでも綺麗に見える、程よい横幅の設定 ---
 st.markdown("""
     <style>
-    /* パソコン（大画面） */
-    html { font-size: 16px; }
-    .main .block-container { max-width: 900px; padding-top: 2rem; }
-
-    /* スマホ */
-    @media (max-width: 768px) {
-        html { font-size: 14px; }
-        .main .block-container { max-width: 100%; padding-left: 0.5rem; padding-right: 0.5rem; padding-top: 1rem; }
-        .stButton button { width: 100%; padding: 0.5rem; }
+    .main .block-container {
+        max-width: 1000px; /* 画面が狭くなりすぎんよう、ゆったり広げる */
+        padding-top: 2rem;
     }
-    
-    /* PDF埋め込み用のコンテナ */
-    .pdf-container {
-        width: 100%;
-        height: 80vh; /* 画面の高さの80%を使う */
-        border: 1px solid #ccc;
+    @media (max-width: 768px) {
+        .main .block-container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -44,14 +36,6 @@ def initialize_pdf_files():
 with st.spinner("最新のレギュレーションデータを取得中..."):
     initialize_pdf_files()
 
-
-def get_pdf_page_count(file_path):
-    """PDFの総ページ数を取得する"""
-    try:
-        reader = PdfReader(file_path)
-        return len(reader.pages)
-    except:
-        return 0
 
 def search_keywords_in_pdf_by_page(file_path, keywords):
     """PDFをページごとに検索し、ヒットしたページ番号と行を抽出する"""
@@ -75,40 +59,23 @@ def search_keywords_in_pdf_by_page(file_path, keywords):
         
     return results
 
-def display_pdf_page(file_path, page_num):
-    """PDFの特定のページをStreamlitに埋め込んで表示する"""
-    try:
-        # PDFファイルをブラウザが読める形式（base64）に変換する
-        with open(file_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-        
-        # ブラウザにPDFを埋め込むためのHTML。末尾に「#page=〇」をつけてページを指定
-        # (※スマホブラウザの仕様により1ページ目が表示されることもあるが、ボタンで切り替え可能にする)
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}#page={page_num}" class="pdf-container" type="application/pdf"></iframe>'
-        
-        st.markdown(pdf_display, unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"PDF表示エラー: {e}")
-
 # --- 画面の構築 ---
 st.title("⚽ 少年サッカー公式戦レギュレーション検索")
-st.write("登録されている大会のルール（PDF）からキーワードを爆速で検索します。")
+st.write("登録されている大会のルール（PDF）からキーワードを検索します。")
+st.write("---")
 
 if not os.path.exists(DOCS_DIR) or not [f for f in os.listdir(DOCS_DIR) if f.endswith('.pdf')]:
     st.warning("⚠️ documentsフォルダ内にPDFファイルが見つかりません。")
 else:
     pdf_files = [f for f in os.listdir(DOCS_DIR) if f.endswith('.pdf')]
     selected_file = st.selectbox("検索する大会（PDF）を選択してください", pdf_files)
-    file_path = os.path.join(DOCS_DIR, selected_file)
     
-    # 【新機能】PDFの総ページ数を取得
-    total_pages = get_pdf_page_count(file_path)
+    # PDFのGitHub直リンクURL（Public運用を想定）
+    pdf_github_url = f"https://github.com/{GITHUB_USERNAME}/{REPOSITORY_NAME}/blob/main/{DOCS_DIR}/{selected_file}"
     
-    # 【新機能】ページを切り替えるための「状態」を管理する
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = 1 # 初期ページは1
-
-    # --- 🔍 検索フォーム ---
+    # 分かりやすい原本リンクボタン
+    st.markdown(f"### 🔗 [📄 この大会の公式PDF（原本）を別タブで開く]({pdf_github_url})")
+    
     search_input = st.text_input("検索キーワードを入力してください（スペース区切りでAND検索）")
     
     if st.button("検索を実行"):
@@ -116,48 +83,22 @@ else:
             st.warning("キーワードを入力してください。")
         else:
             keywords = search_input.split()
+            file_path = os.path.join(DOCS_DIR, selected_file)
             
             with st.spinner("検索中..."):
-                st.session_state.hits = search_keywords_in_pdf_by_page(file_path, keywords)
-                # 検索したら、最初のヒットページにPDFを切り替える
-                if st.session_state.hits:
-                    st.session_state.current_page = st.session_state.hits[0]["page"]
-    
-    st.write("---")
-    
-    # --- 📄 PDFビューアー & 検索結果 ---
-    col1, col2 = st.columns([1, 2]) # 画面を1:2の幅で分割
-
-    with col1:
-        # 左側に検索結果リスト
-        st.subheader(f"🔍 ヒット数: {len(st.session_state.get('hits', []))}件")
-        if st.session_state.get('hits'):
-            for i, hit in enumerate(st.session_state.hits, 1):
-                display_text = hit["text"]
-                for kw in keywords:
-                    insensitive_kw = re.compile(re.escape(kw), re.IGNORECASE)
-                    display_text = insensitive_kw.sub(f"**{kw}**", display_text)
+                hits = search_keywords_in_pdf_by_page(file_path, keywords)
                 
-                # ページ番号をクリックしたら、そのページにジャンプするボタンにする
-                if st.button(f"[P.{hit['page']}] {display_text[:20]}...", key=f"hit_{i}"):
-                    st.session_state.current_page = hit["page"]
-
-    with col2:
-        # 右側にPDF埋め込み & 日本語操作ボタン
-        st.subheader("📄 原本 PDF")
-        
-        # 【神機能】自作の日本語ページ切り替えボタン！
-        c1, c2, c3 = st.columns([1, 2, 1])
-        with c1:
-            if st.button("⬅ 前のページ"):
-                if st.session_state.current_page > 1:
-                    st.session_state.current_page -= 1
-        with c2:
-            st.write(f"**{st.session_state.current_page} / {total_pages} ページ**")
-        with c3:
-            if st.button("次のページ ➡"):
-                if st.session_state.current_page < total_pages:
-                    st.session_state.current_page += 1
-        
-        # PDFを埋め込んで表示
-        display_pdf_page(file_path, st.session_state.current_page)
+            st.subheader(f"🔍 検索結果 (ヒット数: {len(hits)}件)")
+            
+            if hits:
+                for i, hit in enumerate(hits, 1):
+                    display_text = hit["text"]
+                    for kw in keywords:
+                        insensitive_kw = re.compile(re.escape(kw), re.IGNORECASE)
+                        display_text = insensitive_kw.sub(f"**{kw}**", display_text)
+                    
+                    # ページ番号に直リンクを仕込む
+                    page_url = f"{pdf_github_url}#page={hit['page']}"
+                    st.markdown(f"{i}. [[P.{hit['page']}]({page_url})] {display_text}")
+            else:
+                st.info("一致するキーワードが見つかりませんでした。別の言葉で試してみてください。")
