@@ -5,9 +5,41 @@ from pypdf import PdfReader
 import auto_update
 
 DOCS_DIR = "documents"
-# ShusukeくんのGitHubのユーザー名（もし違ってたらここを書き換えてな）
 GITHUB_USERNAME = "tatsumi-syu"
 REPOSITORY_NAME = "soccer-regulation-search"
+
+# --- 【新機能】スマホとPCで文字サイズや横幅を自動調整する魔法のCSS ---
+st.markdown("""
+    <style>
+    /* ─── ① パソコン（大画面）用の設定 ─── */
+    html {
+        font-size: 16px; /* PCは普通の文字サイズ */
+    }
+    .main .block-container {
+        max-width: 900px; /* PC画面では横に広がりすぎんよう中央に寄せる */
+        padding-top: 2rem;
+    }
+
+    /* ─── ② スマホ（横幅が768px以下の画面）用の設定 ─── */
+    @media (max-width: 768px) {
+        html {
+            font-size: 14px; /* スマホは文字を少し小さくしてギュッと収める */
+        }
+        .main .block-container {
+            max-width: 100%; /* スマホは画面の端までいっぱいに使う */
+            padding-left: 0.5rem;  /* 左右の無駄な余白をギリギリまで削る */
+            padding-right: 0.5rem;
+            padding-top: 1rem;
+        }
+        /* 検索ボタンとか入力欄をスマホでタップしやすく大きくする */
+        .stButton button {
+            width: 100%; /* スマホの時はボタンを横いっぱいに広げて押しやすくする */
+            padding: 0.5rem;
+        }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 @st.cache_data(show_spinner=False)
 def initialize_pdf_files():
@@ -17,7 +49,7 @@ def initialize_pdf_files():
     except Exception as e:
         print(f"初期ダウンロード中にエラーが発生しました: {e}")
 
-with st.spinner("最新のレギュレーションデータを取得中...（初回のみ数十秒かかります）"):
+with st.spinner("最新のレギュレーションデータを取得中..."):
     initialize_pdf_files()
 
 
@@ -45,7 +77,7 @@ def search_keywords_in_pdf_by_page(file_path, keywords):
 
 # --- 画面の構築 ---
 st.title("⚽ 少年サッカー公式戦レギュレーション検索")
-st.write("登録されている大会のルール（PDF）からキーワードを検索します。")
+st.write("登録されている大会のルール（PDF）からキーワードを爆速で検索します。")
 
 if not os.path.exists(DOCS_DIR) or not [f for f in os.listdir(DOCS_DIR) if f.endswith('.pdf')]:
     st.warning("⚠️ documentsフォルダ内にPDFファイルが見つかりません。")
@@ -54,12 +86,10 @@ else:
     pdf_files = [f for f in os.listdir(DOCS_DIR) if f.endswith('.pdf')]
     selected_file = st.selectbox("検索する大会（PDF）を選択してください", pdf_files)
     
-    # 【新機能】選択されたPDFのGitHub直リンクURLを自動で組み立てる
     pdf_github_url = f"https://github.com/{GITHUB_USERNAME}/{REPOSITORY_NAME}/blob/main/{DOCS_DIR}/{selected_file}"
     
-    # 画面に分かりやすくPDFへのリンクボタンを表示
-    st.markdown(f"🔗 [📄 選択中のDFを開く]({pdf_github_url})")
-    st.write("---") # 区切り線
+    st.markdown(f"🔗 [📄 選択中のPDFを開く]({pdf_github_url})")
+    st.write("---")
     
     search_input = st.text_input("検索キーワードを入力してください（スペース区切りでAND検索）")
     
@@ -82,8 +112,6 @@ else:
                         insensitive_kw = re.compile(re.escape(kw), re.IGNORECASE)
                         display_text = insensitive_kw.sub(f"**{kw}**", display_text)
                     
-                    # ページ番号（リンク風）とテキストを表示
-                    # GitHubのPDFはURLの末尾に「#page=3」をつけると、そのページを直接開ける仕様（PCブラウザ等で有効）
                     page_url = f"{pdf_github_url}#page={hit['page']}"
                     st.markdown(f"{i}. [[P.{hit['page']}]({page_url})] {display_text}")
             else:
