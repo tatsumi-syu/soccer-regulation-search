@@ -58,7 +58,7 @@ else:
     pdf_github_url = f"https://github.com/{GITHUB_USERNAME}/{REPOSITORY_NAME}/blob/main/{DOCS_DIR}/{selected_file}"
     
     # 画面に分かりやすくPDFへのリンクボタンを表示
-    st.markdown(f"🔗 [📄 選択中の公式PDF（原本）をブラウザで開く]({pdf_github_url})")
+    st.markdown(f"🔗 [📄 選択中のDFを開く]({pdf_github_url})")
     st.write("---") # 区切り線
     
     search_input = st.text_input("検索キーワードを入力してください（スペース区切りでAND検索）")
